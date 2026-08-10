@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>projects.irrssue.com</title>
+    <style>
+        :root {
+            --bg: #000000;
+            --node: #ffffff;
+            --edge: #ffffff;
+            --source: #ff3b30;
+        }
+        * { box-sizing: border-box; }
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg);
+            overflow: hidden;
+        }
+        svg {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+        .edge {
+            stroke: var(--edge);
+            stroke-width: 1.2;
+            fill: none;
+            opacity: 0.55;
+        }
+        .node-circle {
+            fill: var(--node);
+        }
+        .node-circle.source {
+            fill: var(--source);
+        }
+        .node-label {
+            fill: var(--node);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            font-size: 12px;
+            text-anchor: middle;
+        }
+        .node-label.source {
+            fill: var(--source);
+            font-size: 14px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <svg id="graph" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid meet">
+        <defs>
+            <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                <path d="M0,0 L6,3 L0,6 Z" fill="#ffffff" opacity="0.85"></path>
+            </marker>
+        </defs>
+        <g id="edges"></g>
+        <g id="nodes"></g>
+    </svg>
+
+    <script>
+        // Obsidian-style graph: one red source node in the center, white nodes
+        // radiating out for every subdomain / path this site exposes.
+        // ponytail: node list is hand-curated from a DNS + link sweep done once,
+        // not fetched live. Re-run the sweep and edit this array when adding sites.
+        const source = { name: "irrssue.com" };
+
+        const nodes = [
+            { name: "news.irrssue.com", url: "https://news.irrssue.com" },
+            { name: "mail.irrssue.com", url: "https://mail.irrssue.com" },
+            { name: "upload.irrssue.com", url: "https://upload.irrssue.com" },
+            { name: "resume.irrssue.com", url: "https://resume.irrssue.com" },
+            { name: "ssh.irrssue.com", url: "https://ssh.irrssue.com" },
+            { name: "irrssue.com/drawsomething", url: "https://irrssue.com/drawsomething/" },
+            { name: "irrssue.com/windchime", url: "https://irrssue.com/windchime/" },
+            { name: "irrssue.com/code", url: "https://irrssue.com/code/" },
+            { name: "irrssue.com/lockin", url: "https://irrssue.com/lockin/" },
+            { name: "irrssue.com/mood-receipt", url: "https://irrssue.com/mood-receipt/" },
+            { name: "irrssue.com/solarsystem", url: "https://irrssue.com/solarsystem/" },
+        ];
+
+        const cx = 500, cy = 500;
+        const radius = Math.min(500, 500) * 0.62;
+        const sourceR = 14;
+        const nodeR = 9;
+
+        const edgesG = document.getElementById("edges");
+        const nodesG = document.getElementById("nodes");
+
+        // Source node, dead center.
+        const sourceG = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        sourceG.innerHTML = `
+            <circle class="node-circle source" cx="${cx}" cy="${cy}" r="${sourceR}"></circle>
+            <text class="node-label source" x="${cx}" y="${cy + sourceR + 20}">${source.name}</text>
+        `;
+        nodesG.appendChild(sourceG);
+
+        nodes.forEach((node, i) => {
+            const angle = (i / nodes.length) * Math.PI * 2 - Math.PI / 2;
+            const x = cx + radius * Math.cos(angle);
+            const y = cy + radius * Math.sin(angle);
+
+            // Curved edge from the edge of the source circle to the edge of the node circle.
+            const dx = x - cx, dy = y - cy;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const ux = dx / dist, uy = dy / dist;
+            const startX = cx + ux * sourceR;
+            const startY = cy + uy * sourceR;
+            const endX = x - ux * (nodeR + 8);
+            const endY = y - uy * (nodeR + 8);
+            const midX = (startX + endX) / 2 - uy * 30;
+            const midY = (startY + endY) / 2 + ux * 30;
+
+            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            path.setAttribute("class", "edge");
+            path.setAttribute("d", `M${startX},${startY} Q${midX},${midY} ${endX},${endY}`);
+            path.setAttribute("marker-end", "url(#arrowhead)");
+            edgesG.appendChild(path);
+
+            const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            g.innerHTML = `
+                <a href="${node.url}" target="_blank" rel="noopener">
+                    <circle class="node-circle" cx="${x}" cy="${y}" r="${nodeR}"></circle>
+                    <text class="node-label" x="${x}" y="${y + nodeR + 16}">${node.name}</text>
+                </a>
+            `;
+            nodesG.appendChild(g);
+        });
+    </script>
+</body>
+</html>
